@@ -1,4 +1,5 @@
-package com.salesmanagement.management.entity.outward;
+package com.salesmanagement.management.entity.sales;
+
 
 import jakarta.persistence.Embeddable;
 import lombok.AllArgsConstructor;
@@ -11,8 +12,7 @@ import java.io.Serializable;
 @NoArgsConstructor
 @AllArgsConstructor
 @Embeddable
-public class OutwardId implements Serializable {
-    private String outwardBailNumber;
-    private int outwardItemSize;
-    private String outwardItemType;
+public class SalesId implements Serializable {
+    private int salesItemSize;
+    private String salesItemType;
 }

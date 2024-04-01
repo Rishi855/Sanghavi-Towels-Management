@@ -53,21 +53,25 @@ function getItemsList() {
         });
 }
 ///////////////////////////Modal//////////////////
-document.getElementById("itemForm").addEventListener('submit',function(event){
+document.getElementById("itemForm").addEventListener('submit', function(event) {
     event.preventDefault();
+
     var formData = new FormData(document.getElementById("itemForm"));
     var itemSize = formData.get('itemSize');
     var itemType = formData.get('itemType');
-    jsonObject = {};
-    itemsId = {};
-    itemsId["itemSize"] = itemSize;
-    itemsId["itemType"] = itemType;
-    jsonObject["itemsId"] = itemsId;
 
-    if(!itemSize || !itemType){
-       customToast("Please enter valid data",0);
-       return;
+    if (!itemSize || !itemType) {
+        customToast("Please enter valid data", 0);
+        return;
     }
+
+    var jsonObject = {
+        itemsId: {
+            itemSize: itemSize,
+            itemType: itemType
+        }
+    };
+
     fetch('/addItem', {
         method: 'POST',
         headers: {
@@ -77,28 +81,31 @@ document.getElementById("itemForm").addEventListener('submit',function(event){
     })
     .then(response => {
         if (!response.ok) {
+            customToast("Error due to network", 0);
             throw new Error('Network response was not ok');
         }
+        customToast("New Item Added", 1);
+        document.getElementById("closeItemModel").click();
+        getItemsList(); // Assuming this function exists to update the items list
     })
     .catch(error => {
         console.error('Error:', error);
     });
-    customToast("New Item Added",1);
-    document.getElementById("closeItemModel").click();
-})
+});
+
 
 //////////////////////////INWARD//////////////////////////////////////////////
 document.getElementById("inwardDozen").addEventListener("input", function() {
         var val = document.getElementById("inwardDozen").value;
         if(!val) return;
-        var dozenValue = parseInt(val);
+        var dozenValue = parseFloat(val);
         var pieceValue = dozenValue * 12;
         document.getElementById("inwardPiece").value = pieceValue;
 });
 document.getElementById("inwardPiece").addEventListener("input", function() {
-        var val = document.getElementById("inwardDozen").value;
+        var val = document.getElementById("inwardPiece").value;
         if(!val) return;
-        var dozenValue = parseInt(val);
+        var dozenValue = parseFloat(val);
         var pieceValue = Math.round(dozenValue/12 * 10 ** 2) / 10 ** 2;
         document.getElementById("inwardDozen").value = pieceValue;
 });
@@ -198,7 +205,7 @@ document.getElementById("outwardDozen").addEventListener("input", function() {
         document.getElementById("outwardPiece").value = pieceValue;
 });
 document.getElementById("outwardPiece").addEventListener("input", function() {
-        var val = document.getElementById("outwardDozen").value;
+        var val = document.getElementById("outwardPiece").value;
         if(!val) return;
         var dozenValue = parseInt(val);
         var pieceValue = Math.round(dozenValue/12 * 10 ** 2) / 10 ** 2;
@@ -300,34 +307,40 @@ document.getElementById("addNewOutwardItem").addEventListener('click', function(
 const inwardRadio = document.getElementById('searchInward');
 const outwardRadio = document.getElementById('searchOutward');
 const searchAllItemsRadio = document.getElementById('searchAllItems');
+const searchSalesRadio = document.getElementById('searchSales');
 const searchForm = document.getElementById("searchForm");
 
 inwardRadio.addEventListener('change', handleRadioChange);
 outwardRadio.addEventListener('change', handleRadioChange);
 searchAllItemsRadio.addEventListener('change', handleRadioChange);
+searchSalesRadio.addEventListener('change', handleRadioChange);
 searchForm.addEventListener('submit', handleFormSubmit);
 
 function handleRadioChange(event) {
     const thElements = document.querySelectorAll('.tableSearchType th');
     let newHeaderNames;
     if (inwardRadio.checked) {
-        newHeaderNames = ['#', 'Memo Number', 'Date', 'Item Size', 'Item Type', 'Dozen', 'Piece'];
+        newHeaderNames = ['Edit', '#', 'Memo Number', 'Date', 'Item Size', 'Item Type', 'Dozen', 'Piece'];
     } else if (outwardRadio.checked) {
-        newHeaderNames = ['#', 'Bail Number', 'Date', 'Item Size', 'Item Type', 'Dozen', 'Piece'];
+        newHeaderNames = ['Edit', '#', 'Bail Number', 'Date', 'Item Size', 'Item Type', 'Dozen', 'Piece'];
+    }
+    else if(searchAllItemsRadio.checked){
+        newHeaderNames = ['Edit', '#', 'Item Size', 'Item Type','','','',''];
     }
     else{
-        newHeaderNames = ['#', 'Item Size', 'Item Type','','','',''];
+        newHeaderNames = ['Edit', '#', 'Item Size', 'Item Type','Dozen','Piece','',''];
     }
     thElements.forEach((th, index) => {
             th.innerHTML = newHeaderNames[index];
         });
+    handleFormSubmit(event);
 }
 
 function handleFormSubmit(event) {
     event.preventDefault();
     let searchItemSize = document.getElementById("searchItemSize");
     let searchItemType = document.getElementById("searchItemType");
-    let searchType = inwardRadio.checked ? "searchInwardItem" : outwardRadio.checked? "searchOutwardItem" : "searchAllItem";
+    let searchType = inwardRadio.checked ? "searchInwardItem" : outwardRadio.checked? "searchOutwardItem" : searchAllItemsRadio.checked? "searchAllItem" : "searchSalesItem";;
 
     var itemsIdObject = {
         "itemSize": searchItemSize.value,
@@ -349,7 +362,13 @@ function handleFormSubmit(event) {
         return response.json();
     })
     .then(data => {
-        displayItems(data);
+        if (data.length) {
+            customToast("Record Found", 1);
+        } else {
+            customToast("No Record Found", 0);
+        }
+        if(searchSalesRadio.checked) displaySales(data);
+        else displayItems(data);
     })
     .catch(error => {
         console.error('Error:', error);
@@ -359,26 +378,245 @@ function handleFormSubmit(event) {
 function displayItems(items) {
     const tableBody = document.querySelector(".search-table-body");
     tableBody.innerHTML = ""; // Clear existing rows
-    var rowId=1;
+    var rowId = 1;
     items.forEach(item => {
         var newRow = document.createElement('tr');
-
-        newRow.innerHTML = `<th scope="row">${rowId++}</th>
-                          <td>${item.inwardId?.inwardMemoNumber || item.outwardId?.outwardBailNumber || item.itemsId?.itemSize}</td>
-                          <td>${item.inwardDate || item.outwardDate || item.itemsId?.itemType}</td>
-                          <td>${item.inwardId?.inwardItemSize || item.outwardId?.outwardItemSize || ""}</td>
-                          <td>${item.inwardId?.inwardItemType || item.outwardId?.outwardItemType || ""}</td>
+        newRow.innerHTML = `<td><i class="edit-pension-icon fa-solid fa-pen-to-square" style="color: #5e62de;"><i class="ms-3 save-icon fa-solid fa-floppy-disk" style="color: #838486;"></i><i class="ms-3 delete-icon fa-solid fa-trash" style="color: #838486;"></i></td>
+                          <th scope="row">${rowId++}</th>
+                          <td>${item.inwardId?.inwardMemoNumber || item.outwardId?.outwardBailNumber || item.itemsId?.itemSize || item.salesId?.salesItemSize}</td>
+                          <td>${item.inwardDate || item.outwardDate || item.itemsId?.itemType || item.salesId?.salesItemType}</td>
+                          <td>${item.inwardId?.inwardItemSize || item.outwardId?.outwardItemSize || item.salesDozen || ""}</td>
+                          <td>${item.inwardId?.inwardItemType || item.outwardId?.outwardItemType || item.salesPiece ||""}</td>
                           <td>${item.inwardDozen || item.outwardDozen || ""}</td>
                           <td>${item.inwardPiece || item.outwardPiece || ""}</td>`;
+        if(item.salesId){
+            tableBody.appendChild(newRow);
+            return;
+        }
+        const editPensionIcon = newRow.querySelector('.edit-pension-icon');
+        // Add click event listener to the edit pension icon
+        editPensionIcon.addEventListener('click', () => {
+            let jsonObjectOld = JSON.parse(JSON.stringify(item));
+            newRow.innerHTML = `<td><i class="edit-pension-icon fa-solid fa-pen-to-square" style="color: #5e62de;"><i class="ms-3 save-icon fa-solid fa-floppy-disk" style="color: #10b141;"></i><i class="ms-3 delete-icon fa-solid fa-trash" style="color: #f32020;"></i></td>
+                               <th scope="row">${rowId}</th>
+                               <td><input class="edit-input form-control" type="text" value="${item.inwardId?.inwardMemoNumber || item.outwardId?.outwardBailNumber || item.itemsId?.itemSize}"></td>
+                               <td><input class="edit-input form-control" type="text" value="${item.inwardDate || item.outwardDate || item.itemsId?.itemType}"></td>
+                               <td><input class="edit-input form-control" type="text" value="${item.inwardId?.inwardItemSize || item.outwardId?.outwardItemSize || ""}"></td>
+                               <td><input class="edit-input form-control" type="text" value="${item.inwardId?.inwardItemType || item.outwardId?.outwardItemType || ""}"></td>
+                               <td><input class="edit-input form-control" type="text" id="edit-input-dozen" value="${item.inwardDozen || item.outwardDozen || ""}"></td>
+                               <td><input class="edit-input form-control" type="text" id="edit-input-piece" value="${item.inwardPiece || item.outwardPiece || ""}"></td>`;
+            if(item.itemsId)
+            newRow.innerHTML = `<td><i class="edit-pension-icon fa-solid fa-pen-to-square" style="color: #5e62de;"><i class="ms-3 save-icon fa-solid fa-floppy-disk" style="color: #10b141;"></i><i class="ms-3 delete-icon fa-solid fa-trash" style="color: #f32020;"></i></td>
+                                           <th scope="row">${rowId}</th>
+                                           <td><input class="edit-input form-control" type="text" value="${item.itemsId?.itemSize}"></td>
+                                           <td><input class="edit-input form-control" type="text" value="${item.itemsId?.itemType}"></td>
+                                           <td></td>
+                                           <td></td>
+                                           <td></td>
+                                           <td></td>`;
+
+            const editInputs = newRow.querySelectorAll('.edit-input');
+            const saveIcon = newRow.querySelector('.save-icon');
+            const deleteIcon = newRow.querySelector('.delete-icon');
+            editPensionIcon.style.display = 'none';
+            saveIcon.style.display = 'inline';
+            deleteIcon.addEventListener('click',() => {
+                if(item.inwardId) deleteItem('/deleteInward',item);
+                else if(item.outwardId) deleteItem('/deleteOutward',item);
+                else if(item.itemsId) deleteItem('/deleteItem',item);
+                newRow.remove();
+            });
+
+            saveIcon.addEventListener('click', () => {
+                if(item.itemsId){
+                    if (
+                        editInputs[0].value === null || editInputs[0].value.trim() === '' ||
+                        editInputs[1].value === null || editInputs[1].value.trim() === ''
+                    ) {
+                        customToast("Please enter all values",0);
+                        return;
+                    }
+                }else{
+                    if (
+                        editInputs[0].value === null || editInputs[0].value.trim() === '' ||
+                        editInputs[1].value === null || editInputs[1].value.trim() === '' ||
+                        editInputs[2].value === null || editInputs[2].value.trim() === '' ||
+                        editInputs[3].value === null || editInputs[3].value.trim() === '' ||
+                        editInputs[4].value === null || editInputs[4].value.trim() === '' ||
+                        editInputs[5].value === null || editInputs[5].value.trim() === ''
+                    ) {
+                        customToast("Please enter all values",0);
+                        return;
+                    }
+                    let checkOutwardContain = false;
+                    if (fullItemList) { // Ensure fullItemList is not null or undefined
+                        for (var i = 0; i < fullItemList.length; i++) {
+                            if (fullItemList[i].itemsId.itemSize == editInputs[2].value && fullItemList[i].itemsId.itemType === editInputs[3].value) {
+                                checkOutwardContain = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!checkOutwardContain) {
+                        customToast("Type and Size are not available",0);
+                        return;
+                    }
+                }
+                if (item.inwardId) {
+                    item.inwardId.inwardMemoNumber = editInputs[0].value;
+                    item.inwardId.inwardItemSize = editInputs[2].value;
+                    item.inwardId.inwardItemType = editInputs[3].value;
+                    item.inwardDate = editInputs[1].value;
+                    item.inwardDozen = editInputs[4].value;
+                    item.inwardPiece = editInputs[5].value;
+                    updateItem('/deleteInward','/addInward',jsonObjectOld,item);
+                }
+                else if (item.outwardId) {
+                    item.outwardId.outwardBailNumber = editInputs[0].value;
+                    item.outwardId.outwardItemSize = editInputs[2].value;
+                    item.outwardId.outwardItemType = editInputs[3].value;
+                    item.outwardDate = editInputs[1].value;
+                    item.outwardDozen = editInputs[4].value;
+                    item.outwardPiece = editInputs[5].value;
+                    updateItem('/deleteOutward','/addOutward',jsonObjectOld,item);
+                }
+                else if (item.itemsId) {
+                    item.itemsId.itemSize = editInputs[0].value;
+                    item.itemsId.itemType = editInputs[1].value;
+                    updateItem('/deleteItem','/addItem',jsonObjectOld,item);
+                }
+                newRow.innerHTML = `<td><i class="edit-pension-icon fas fa-pencil-alt"></i><i class="ms-3 save-icon fas fa-save"></i><i class="ms-3 delete-icon fas fa-trash-alt"></i></td>
+                               <th scope="row">${rowId}</th>
+                               <td>${item.inwardId?.inwardMemoNumber || item.outwardId?.outwardBailNumber || item.itemsId?.itemSize}</td>
+                               <td>${item.inwardDate || item.outwardDate || item.itemsId?.itemType}</td>
+                               <td>${item.inwardId?.inwardItemSize || item.outwardId?.outwardItemSize || ""}</td>
+                               <td>${item.inwardId?.inwardItemType || item.outwardId?.outwardItemType || ""}</td>
+                               <td>${item.inwardDozen || item.outwardDozen || ""}</td>
+                               <td>${item.inwardPiece || item.outwardPiece || ""}</td>`;
+                displayItems(items);
+            });
+            if(item.inwardId || item.outwardId){
+                document.getElementById("edit-input-dozen").addEventListener("input", function() {
+                        var val = document.getElementById("edit-input-dozen").value;
+                        if(!val) return;
+                        var dozenValue = parseInt(val);
+                        var pieceValue = dozenValue * 12;
+                        document.getElementById("edit-input-piece").value = pieceValue;
+                });
+                document.getElementById("edit-input-piece").addEventListener("input", function() {
+                        var val = document.getElementById("edit-input-piece").value;
+                        if(!val) return;
+                        var pieceValue = parseInt(val);
+                        var dozenValue = Math.round(pieceValue/12 * 10 ** 2) / 10 ** 2;
+                        document.getElementById("edit-input-dozen").value = dozenValue;
+                });
+            }
+        });
         tableBody.appendChild(newRow);
     });
-    if(items.length){
-        customToast("No Record Found",1);
-    }else{
-        customToast("No Record Found",0);
-    }
 }
 
+function displaySales(items) {
+    const tableBody = document.querySelector(".search-table-body");
+    tableBody.innerHTML = ""; // Clear existing rows
+    var rowId = 1;
+    items.forEach(item => {
+        const isNegative = item.salesDozen < 0 || item.salesPiece < 0;
+        var newRow = document.createElement('tr');
+        newRow.innerHTML = `<td><i class="edit-pension-icon fa-solid fa-pen-to-square" style="color: #5e62de;"><i class="ms-3 save-icon fa-solid fa-floppy-disk" style="color: #838486;"></i><i class="ms-3 delete-icon fa-solid fa-trash" style="color: #838486;"></i></td>
+                          <th scope="row">${rowId++}</th>
+                          <td>${item.salesId?.salesItemSize}</td>
+                          <td>${item.salesId?.salesItemType}</td>
+                          <td>${item.salesDozen}</td>
+                          <td>${item.salesPiece}</td>
+                          <td></td>
+                          <td></td>`;
+        if (isNegative) {
+            newRow.classList.add('negative-row');
+        }
+        tableBody.appendChild(newRow);
+    })
+}
+
+
+function updateItem(deleteUrl,addUrl,jsonObjectOld, jsonObject) {
+    console.log('update old ',jsonObjectOld);
+    console.log('update new',jsonObject);
+    fetch(deleteUrl,{
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(jsonObjectOld)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data =>{
+        console.log("Delete called ", data);
+        if(data == 1 ) {
+            addItem(addUrl,jsonObject);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+function addItem(addUrl,jsonObject) {
+    fetch(addUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(jsonObject)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+
+        return response.json();
+    })
+    .then(data =>{
+        if(data == 1) {
+            customToast("Updated item", 1);
+        }
+        else{
+            customToast("Updated item", 1);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+function deleteItem(deleteUrl,jsonObject) {
+    fetch(deleteUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(jsonObject)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        customToast("Item Deleted", 1);
+        return response.json();
+    })
+    .then(data =>{
+        if(data == 1) {
+            console.log("Deleted successful");
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
 //////////////////////////////SEARCH END///////////////////////////////////////////////
 
 ////////////CUSTOM TOAST///////////////////
@@ -395,15 +633,3 @@ function customToast(msg,status){
     }
     toastBootstrap.show();
 }
-
-//document.getElementById('addProductBtn').addEventListener('click', function() {
-//    var existingForm = document.getElementById('originalForm');
-//    var clonedFormContainer = document.getElementById('clonedForm');
-//    var cloneForm = existingForm.cloneNode(true); // Clone the form
-//    var inputs = cloneForm.getElementsByTagName('input');
-//    for (var i = 0; i < inputs.length; i++) {
-//        inputs[i].value = '';
-//    }
-//    clonedFormContainer.appendChild(cloneForm);
-//    clonedFormContainer.style.display = 'block';
-//});

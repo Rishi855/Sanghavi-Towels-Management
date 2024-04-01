@@ -59,7 +59,7 @@
                                         <label for="inwardMemoNumber" class="form-label">Memo Number</label>
                                         <div class="input-group flex-nowrap">
                                             <span class="input-group-text"><i class="bi bi-hash"></i></span>
-                                            <input type="number" name="inwardMemoNumber" id="inwardMemoNumber" class="form-control" placeholder="Enter memo number">
+                                            <input type="text" name="inwardMemoNumber" id="inwardMemoNumber" class="form-control" placeholder="Enter memo number">
                                         </div>
                                     </div>
 
@@ -107,7 +107,7 @@
                                                 <label for="inwardPiece" class="form-label">Piece</label>
                                                 <div class="input-group flex-nowrap">
                                                     <span class="input-group-text"><i class="bi bi-receipt"></i></span>
-                                                    <input type="number" name="inwardPiece" id="inwardPiece" class="form-control" placeholder="Automatically calculated">
+                                                    <input type="number" step="any" name="inwardPiece" id="inwardPiece" class="form-control" placeholder="Automatically calculated">
                                                 </div>
                                             </div>
                                         </div>
@@ -151,7 +151,7 @@
                                         <label for="outwardBailNumber" class="form-label">Bail Number</label>
                                         <div class="input-group flex-nowrap">
                                             <span class="input-group-text"><i class="bi bi-hash"></i></span>
-                                            <input type="number" name="outwardBailNumber" id="outwardBailNumber" class="form-control" placeholder="Enter bail number">
+                                            <input type="text" name="outwardBailNumber" id="outwardBailNumber" class="form-control" placeholder="Enter bail number">
                                         </div>
                                     </div>
 
@@ -269,6 +269,10 @@
                                             <input type="radio" name="searchType" id="searchAllItems" class="form-check-input">
                                             <label for="searchAllItems" class="form-check-label">Items</label>
                                         </div>
+                                        <div class="form-check form-check-inline flex-nowrap">
+                                            <input type="radio" name="searchType" id="searchSales" class="form-check-input">
+                                            <label for="searchSales" class="form-check-label">Sales</label>
+                                        </div>
                                     </div>
                                     <div class="mb-3 form-div item-submit">
                                         <button type="submit" class="col-6 btn btn-info" id="searchItem">Search</button>
@@ -277,16 +281,17 @@
                             </form>
                         </div>
                         <div>
-                            <table class="table table-light rounded table-striped">
+                            <table class="table rounded table-striped">
                                 <thead class="tableSearchType">
                                 <tr>
-                                    <th scope="col">#</th>
-                                    <th scope="col">Memo Number</th>
-                                    <th scope="col">Date</th>
-                                    <th scope="col">Item Size</th>
-                                    <th scope="col">Item Type</th>
-                                    <th scope="col">Dozen</th>
-                                    <th scope="col">Piece</th>
+                                    <th scope="col" class="col-1">Edit</th>
+                                    <th scope="col" class="col-1">#</th>
+                                    <th scope="col" class="col-1">Memo Number</th>
+                                    <th scope="col" class="col-1">Date</th>
+                                    <th scope="col" class="col-1">Item Size</th>
+                                    <th scope="col" class="col-1">Item Type</th>
+                                    <th scope="col" class="col-1">Dozen</th>
+                                    <th scope="col" class="col-1">Piece</th>
                                 </tr>
                                 </thead>
                                 <tbody class="search-table-body">
